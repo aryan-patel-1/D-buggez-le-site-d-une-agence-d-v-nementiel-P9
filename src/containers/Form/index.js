@@ -4,18 +4,21 @@ import Field, { FIELD_TYPES } from "../../components/Field";
 import Select from "../../components/Select";
 import Button, { BUTTON_TYPES } from "../../components/Button";
 
-const mockContactApi = () => new Promise((resolve) => { setTimeout(resolve, 500); })
+const mockContactApi = () => new Promise((resolve) => { setTimeout(resolve, 500); });
 
 const Form = ({ onSuccess, onError }) => {
   const [sending, setSending] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(""); // 🔹 Ajout de l'état du message
+
   const sendContact = useCallback(
     async (evt) => {
       evt.preventDefault();
       setSending(true);
-      // We try to call mockContactApi
+      setSuccessMessage(""); // 🔹 Réinitialisation du message
       try {
         await mockContactApi();
         setSending(false);
+        onSuccess(); 
       } catch (err) {
         setSending(false);
         onError(err);
@@ -23,6 +26,7 @@ const Form = ({ onSuccess, onError }) => {
     },
     [onSuccess, onError]
   );
+
   return (
     <form onSubmit={sendContact}>
       <div className="row">
@@ -40,6 +44,7 @@ const Form = ({ onSuccess, onError }) => {
           <Button type={BUTTON_TYPES.SUBMIT} disabled={sending}>
             {sending ? "En cours" : "Envoyer"}
           </Button>
+          {successMessage && <p style={{ color: "green" }}>{successMessage}</p>} {/* 🔹 Affichage du message */}
         </div>
         <div className="col">
           <Field
@@ -56,11 +61,11 @@ const Form = ({ onSuccess, onError }) => {
 Form.propTypes = {
   onError: PropTypes.func,
   onSuccess: PropTypes.func,
-}
+};
 
 Form.defaultProps = {
   onError: () => null,
   onSuccess: () => null,
-}
+};
 
 export default Form;
