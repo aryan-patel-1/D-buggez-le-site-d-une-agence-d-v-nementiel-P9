@@ -1,50 +1,53 @@
-
-import { createContext, useContext, useState, useEffect, useMemo } from "react";
 import PropTypes from "prop-types";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
-export const DataContext = createContext();
+const DataContext = createContext({});
+
+export const api = {
+  loadData: async () => {
+    const json = await fetch("/events.json");
+    return json.json();
+  },
+};
 
 export const DataProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch("/events.json");
-        if (!response.ok) throw new Error("Erreur de chargement des données");
-        const fetchedData = await response.json();
-        setData(fetchedData);
-      } catch (fetchError) {
-        setError(fetchError);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+  const getData = useCallback(async () => {
+    try {
+      setData(await api.loadData());
+    } catch (err) {
+      setError(err);
+    }
   }, []);
-
-  const last = useMemo(() => 
-    Array.isArray(data?.events) && data.events.length > 0
-      ? [...data.events].sort((a, b) => new Date(b.date) - new Date(a.date))[0]
-      : null
-  , [data]);
+  useEffect(() => {
+    if (data) return;
+    getData();
+  });
   
-
-  const contextValue = useMemo(() => ({ data, error, loading, last }), [data, error, loading, last]);
-
   return (
-    <DataContext.Provider value={contextValue}>
+    <DataContext.Provider
+      // eslint-disable-next-line react/jsx-no-constructed-context-values
+      value={{
+        data,
+        error,
+      }}
+    >
       {children}
     </DataContext.Provider>
   );
 };
 
-export const useData = () => useContext(DataContext);
-
 DataProvider.propTypes = {
   children: PropTypes.node.isRequired,
-};
+}
+
+export const useData = () => useContext(DataContext);
+
+export default DataContext;
